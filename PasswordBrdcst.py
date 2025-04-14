@@ -14,6 +14,8 @@ def send_password(password, port=12345):
 
 def recv_password(port=12345):
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+        # Allow the socket to reuse the address
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         s.bind(('', port))
         data, addr = s.recvfrom(1024)
         return data.decode('utf-8')

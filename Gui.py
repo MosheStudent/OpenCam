@@ -5,6 +5,12 @@ import PasswordBrdcst
 import socket
 import threading
 
+def get_local_ip():
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+        # Connect to an external IP (doesn't actually send data)
+        s.connect(("8.8.8.8", 80))
+        return s.getsockname()[0]
+
 class HostWindow:
     def __init__(self):
         self.root = tk.Tk()
@@ -17,7 +23,7 @@ class HostWindow:
         self.displayWin()
 
     def displayWin(self):
-        label = tk.Label(self.root, text=f'password: {self.PASSWORD}')
+        label = tk.Label(self.root, text=f'password: {self.PASSWORD} \n IP: {get_local_ip()}')
         label.pack()
 
         label2 = tk.Label(self.root, text="Waiting for connection...")
@@ -45,6 +51,8 @@ class HostWindow:
 
     def wait_for_confirmation(self, port=12346):
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            # Allow the socket to reuse the address
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             s.bind(('', port))
             s.settimeout(30)  # Wait for 30 seconds for confirmation
             try:
@@ -96,6 +104,7 @@ class JoinWindow:
         password = self.entryPass.get()
         ip = self.entryIP.get()
 
+        # Validate and start in a separate thread
         threading.Thread(target=self.validate_and_start, args=(password, ip)).start()
 
     def validate_and_start(self, password, ip):
