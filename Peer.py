@@ -1,7 +1,7 @@
-import socket # for connections
-import cv2 # for video camera access
-import pickle # file handling
-import threading # for bi-directional video chat
+import socket  # for connections
+import cv2  # for video camera access
+import pickle  # file handling
+import threading  # for bi-directional video chat
 
 CONSTANT_PORT = 9999
 
@@ -12,7 +12,7 @@ class Peer:
         self.remote_port = CONSTANT_PORT
         self.camera_index = camera_index
 
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) #UDP protocol
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP protocol
         self.sock.bind(('', self.local_port))
 
         self.running = True
@@ -28,6 +28,11 @@ class Peer:
                     # Show the received video in the main window
                     cv2.imshow("Remote Video", frame)
 
+                # Check if the OpenCV window "X" button is clicked
+                if cv2.getWindowProperty("Remote Video", cv2.WND_PROP_VISIBLE) < 1:
+                    self.running = False
+                    break
+
                 if cv2.waitKey(1) == ord('q'):
                     self.running = False
                     break
@@ -40,8 +45,6 @@ class Peer:
 
     def start(self):
         t = threading.Thread(target=self.receive_video)
+        t.daemon = True  # Allow the thread to exit when the main program exits
         t.start()
-        t.join()
-
-        self.sock.close()
 
