@@ -9,6 +9,7 @@ class HostWindow:
         self.root.title("Host Meeting")
         self.passGen()
 
+        self.root.protocol("WM_DELETE_WINDOW", self.on_close)  # Handle "X" button
         self.displayWin()
 
     def displayWin(self):
@@ -32,12 +33,16 @@ class HostWindow:
         peer = Peer(remote_ip="127.0.0.1", camera_index=0)  # Use localhost for hosting
         peer.start()
 
+    def on_close(self):
+        self.root.destroy()
+
 class JoinWindow:
     def __init__(self):
         self.root = tk.Tk()
         self.root.geometry("300x300+100+100")
         self.root.title("Join Meeting")
 
+        self.root.protocol("WM_DELETE_WINDOW", self.on_close)  # Handle "X" button
         self.displayWin()
 
     def displayWin(self):
@@ -68,12 +73,16 @@ class JoinWindow:
             peer = Peer(remote_ip=ip, camera_index=0)  # Use the entered IP
             peer.start()
 
+    def on_close(self):
+        self.root.destroy()
+
 class StartWindow:
     def __init__(self):
         self.root = tk.Tk()
         self.root.geometry("300x100+100+100")
         self.root.title("Start WebCall")
 
+        self.root.protocol("WM_DELETE_WINDOW", self.on_close)  # Handle "X" button
         self.displayWin()
 
     def displayWin(self):
@@ -92,3 +101,6 @@ class StartWindow:
     def joinWin(self):
         self.root.destroy()
         JoinWindow()
+
+    def on_close(self):
+        self.root.destroy()

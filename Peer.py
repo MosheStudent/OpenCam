@@ -26,7 +26,8 @@ class Peer:
             if not ret:
                 break
 
-            frame = cv2.resize(frame, (320,240))
+            # Resize frame for sending
+            frame = cv2.resize(frame, (320, 240))
             _, buffer = cv2.imencode('.jpg', frame)
             data = pickle.dumps(buffer)
 
@@ -36,6 +37,8 @@ class Peer:
                 print("Send Error: ", e)
                 break
 
+            # Show local video in a small preview window
+            cv2.imshow("Local Video", frame)
             if cv2.waitKey(1) == ord('q'):
                 self.running = False
                 break
@@ -50,7 +53,8 @@ class Peer:
                 frame = cv2.imdecode(frame, cv2.IMREAD_COLOR)
 
                 if frame is not None:
-                    cv2.imshow(f"Video from {addr}", frame)
+                    # Show the received video in the main window
+                    cv2.imshow("Remote Video", frame)
 
                 if cv2.waitKey(1) == ord('q'):
                     self.running = False
