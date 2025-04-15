@@ -1,5 +1,5 @@
 import tkinter as tk
-from Peer import Peer
+from Peer import Sender, Receiver
 import socket
 
 def get_local_ip():
@@ -17,6 +17,35 @@ class StartWindow:
         self.displayWin()
 
     def displayWin(self):
+        label = tk.Label(self.root, text="Choose Mode:")
+        label.pack()
+
+        senderButton = tk.Button(self.root, text="Send Video", command=self.start_sender)
+        senderButton.pack()
+
+        receiverButton = tk.Button(self.root, text="Receive Video", command=self.start_receiver)
+        receiverButton.pack()
+
+        self.root.mainloop()
+
+    def start_sender(self):
+        self.root.destroy()
+        SenderWindow()
+
+    def start_receiver(self):
+        self.root.destroy()
+        ReceiverWindow()
+
+
+class SenderWindow:
+    def __init__(self):
+        self.root = tk.Tk()
+        self.root.geometry("300x200+100+100")
+        self.root.title("Send Video")
+
+        self.displayWin()
+
+    def displayWin(self):
         label = tk.Label(self.root, text="Enter the remote device's IP:")
         label.pack()
 
@@ -30,19 +59,19 @@ class StartWindow:
         self.entryCameraIndex.insert(0, "0")  # Default camera index
         self.entryCameraIndex.pack()
 
-        connectButton = tk.Button(self.root, text="Connect", command=self.connect)
+        connectButton = tk.Button(self.root, text="Start Sending", command=self.start_sending)
         connectButton.pack()
 
         self.root.mainloop()
 
-    def connect(self):
+    def start_sending(self):
         remote_ip = self.entryIP.get()
         camera_index = int(self.entryCameraIndex.get())
 
         if remote_ip:
             self.root.destroy()
-            peer = Peer(remote_ip=remote_ip, camera_index=camera_index)
-            peer.start()
+            sender = Sender(remote_ip=remote_ip, camera_index=camera_index)
+            sender.start()
         else:
             self.show_error("Please enter a valid IP address.")
 
@@ -54,3 +83,26 @@ class StartWindow:
         label.pack()
         close_button = tk.Button(error_window, text="Close", command=error_window.destroy)
         close_button.pack()
+
+
+class ReceiverWindow:
+    def __init__(self):
+        self.root = tk.Tk()
+        self.root.geometry("300x200+100+100")
+        self.root.title("Receive Video")
+
+        self.displayWin()
+
+    def displayWin(self):
+        label = tk.Label(self.root, text="Waiting to receive video...")
+        label.pack()
+
+        startButton = tk.Button(self.root, text="Start Receiving", command=self.start_receiving)
+        startButton.pack()
+
+        self.root.mainloop()
+
+    def start_receiving(self):
+        self.root.destroy()
+        receiver = Receiver()
+        receiver.start()

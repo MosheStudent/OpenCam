@@ -1,20 +1,17 @@
 import socket  # for connections
 import cv2  # for video camera access
 import pickle  # file handling
-import threading  # for bi-directional video chat
+import threading  # for threading
 
 CONSTANT_PORT = 9999
 
-class Peer:
+class Sender:
     def __init__(self, remote_ip, camera_index):
-        self.local_port = CONSTANT_PORT
         self.remote_ip = remote_ip
         self.remote_port = CONSTANT_PORT
         self.camera_index = camera_index
 
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP protocol
-        self.sock.bind(('', self.local_port))
-
         self.running = True
 
     def send_video(self):
@@ -37,6 +34,21 @@ class Peer:
                 break
 
         cap.release()
+        self.sock.close()
+
+    def start(self):
+        send_thread = threading.Thread(target=self.send_video)
+        send_thread.daemon = True
+        send_thread.start()
+        send_thread.join()
+
+
+class Receiver:
+    def __init__(self):
+        self.local_port = CONSTANT_PORT
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP protocol
+        self.sock.bind(('', self.local_port))
+        self.running = True
 
     def receive_video(self):
         while self.running:
@@ -47,10 +59,10 @@ class Peer:
 
                 if frame is not None:
                     # Show the received video in the main window
-                    cv2.imshow("Remote Video", frame)
+                    cv2.imshow("Received Video", frame)
 
                 # Check if the OpenCV window "X" button is clicked
-                if cv2.getWindowProperty("Remote Video", cv2.WND_PROP_VISIBLE) < 1:
+                if cv2.getWindowProperty("Received Video", cv2.WND_PROP_VISIBLE) < 1:
                     self.running = False
                     break
 
@@ -63,19 +75,11 @@ class Peer:
                 break
 
         cv2.destroyAllWindows()
+        self.sock.close()
 
     def start(self):
-        send_thread = threading.Thread(target=self.send_video)
         receive_thread = threading.Thread(target=self.receive_video)
-
-        send_thread.daemon = True
         receive_thread.daemon = True
-
-        send_thread.start()
         receive_thread.start()
-
-        send_thread.join()
         receive_thread.join()
-
-        self.sock.close()
 
