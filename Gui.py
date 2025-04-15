@@ -8,6 +8,13 @@ def get_local_ip():
         s.connect(("8.8.8.8", 80))
         return s.getsockname()[0]
 
+def is_valid_ip(ip):
+    try:
+        socket.inet_aton(ip)
+        return True
+    except socket.error:
+        return False
+
 class StartWindow:
     def __init__(self):
         self.root = tk.Tk()
@@ -68,12 +75,13 @@ class SenderWindow:
         remote_ip = self.entryIP.get()
         camera_index = int(self.entryCameraIndex.get())
 
-        if remote_ip:
-            self.root.destroy()
-            sender = Sender(remote_ip=remote_ip, camera_index=camera_index)
-            sender.start()
-        else:
-            self.show_error("Please enter a valid IP address.")
+        if not is_valid_ip(remote_ip):
+            self.show_error("Invalid IP address.")
+            return
+
+        self.root.destroy()
+        sender = Sender(remote_ip=remote_ip, camera_index=camera_index)
+        sender.start()
 
     def show_error(self, message):
         error_window = tk.Toplevel(self.root)

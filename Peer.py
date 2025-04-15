@@ -2,6 +2,8 @@ import socket  # for connections
 import cv2  # for video camera access
 import pickle  # file handling
 import threading  # for threading
+from cryptography.hazmat.primitives.asymmetric import rsa, padding
+from cryptography.hazmat.primitives import serialization, hashes
 
 CONSTANT_VIDEO_PORT = 9999
 
@@ -14,8 +16,19 @@ class Sender:
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP protocol
         self.running = True
 
+        # Generate RSA keys
+        self.private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+        self.public_key = self.private_key.public_key()
+
     def send_video(self):
         cap = cv2.VideoCapture(self.camera_index)
+
+        # Serialize the public key and send it to the receiver
+        public_key_bytes = self.public_key.public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo
+        )
+        self.sock.sendto(public_key_bytes, (self.remote_ip, self.remote_port))
 
         while self.running and cap.isOpened():
             ret, frame = cap.read()
@@ -27,8 +40,18 @@ class Sender:
             _, buffer = cv2.imencode('.jpg', frame)
             data = pickle.dumps(buffer)
 
+            # Encrypt the data
+            encrypted_data = self.public_key.encrypt(
+                data,
+                padding.OAEP(
+                    mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                    algorithm=hashes.SHA256(),
+                    label=None
+                )
+            )
+
             try:
-                self.sock.sendto(data, (self.remote_ip, self.remote_port))
+                self.sock.sendto(encrypted_data, (self.remote_ip, self.remote_port))
             except Exception as e:
                 print("Send Video Error: ", e)
                 break
@@ -50,6 +73,9 @@ class Receiver:
         self.sock.bind(('', self.local_port))
         self.running = True
 
+        # Placeholder for the sender's public key
+        self.sender_public_key = None
+
         # Video capture setup
         self.video_writer = None
         self.frame_width = 320
@@ -60,9 +86,24 @@ class Receiver:
     def receive_video(self):
         self.video_writer = cv2.VideoWriter(self.output_file, self.fourcc, 20.0, (self.frame_width, self.frame_height))
 
+        # Receive the sender's public key
+        public_key_bytes, addr = self.sock.recvfrom(65535)
+        self.sender_public_key = serialization.load_pem_public_key(public_key_bytes)
+
         while self.running:
             try:
-                data, addr = self.sock.recvfrom(65535)
+                encrypted_data, addr = self.sock.recvfrom(65535)
+
+                # Decrypt the data
+                data = self.sender_public_key.decrypt(
+                    encrypted_data,
+                    padding.OAEP(
+                        mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                        algorithm=hashes.SHA256(),
+                        label=None
+                    )
+                )
+
                 frame = pickle.loads(data)
                 frame = cv2.imdecode(frame, cv2.IMREAD_COLOR)
 
