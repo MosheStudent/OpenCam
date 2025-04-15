@@ -4,6 +4,7 @@ from Peer import Peer  # Import the Peer class
 import PasswordBrdcst
 import socket
 import threading
+import time
 
 def get_local_ip():
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
@@ -18,6 +19,7 @@ class HostWindow:
         self.root.title("Host Meeting")
         
         self.PASSWORD = PasswordBrdcst.GenPassword()  # Generate a random password
+        self.running = True  # Flag to control threads
 
         self.root.protocol("WM_DELETE_WINDOW", self.on_close)  # Handle "X" button
         self.displayWin()
@@ -29,19 +31,20 @@ class HostWindow:
         label2 = tk.Label(self.root, text="Waiting for connection...")
         label2.pack()
 
-        startButton = tk.Button(self.root, text="Start Meeting", command=self.startMeeting)
-        startButton.pack()
+        # Start broadcasting the password and checking for confirmation in separate threads
+        threading.Thread(target=self.broadcast_password, daemon=True).start()
+        threading.Thread(target=self.wait_for_confirmation_and_start, daemon=True).start()
 
         self.root.mainloop()
 
-    def startMeeting(self):
-        PasswordBrdcst.send_password(self.PASSWORD)  # Send the password to the network
-
-        # Wait for connection confirmation
-        threading.Thread(target=self.wait_for_confirmation_and_start).start()
+    def broadcast_password(self):
+        while self.running:
+            PasswordBrdcst.send_password(self.PASSWORD)
+            time.sleep(10)  # Broadcast every 10 seconds
 
     def wait_for_confirmation_and_start(self):
         if self.wait_for_confirmation():
+            self.running = False  # Stop broadcasting
             self.root.destroy()
             # Start the Peer instance for hosting
             peer = Peer(remote_ip="127.0.0.1", camera_index=0)  # Use localhost for hosting
@@ -71,6 +74,7 @@ class HostWindow:
         close_button.pack()
 
     def on_close(self):
+        self.running = False  # Stop broadcasting
         self.root.destroy()
 
 class JoinWindow:

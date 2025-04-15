@@ -5,4 +5,6 @@ class Main:
     def __init__(self):
         self.strtWin = Gui.StartWindow()
 
-main = Main()
+if __name__ == "__main__":
+    # Start the GUI application
+    main = Main()
