@@ -17,6 +17,27 @@ class Peer:
 
         self.running = True
 
+    def send_video(self):
+        cap = cv2.VideoCapture(self.camera_index)
+
+        while self.running and cap.isOpened():
+            ret, frame = cap.read()
+            if not ret:
+                break
+
+            # Resize frame for sending
+            frame = cv2.resize(frame, (320, 240))
+            _, buffer = cv2.imencode('.jpg', frame)
+            data = pickle.dumps(buffer)
+
+            try:
+                self.sock.sendto(data, (self.remote_ip, self.remote_port))
+            except Exception as e:
+                print("Send Error: ", e)
+                break
+
+        cap.release()
+
     def receive_video(self):
         while self.running:
             try:
@@ -44,7 +65,17 @@ class Peer:
         cv2.destroyAllWindows()
 
     def start(self):
-        t = threading.Thread(target=self.receive_video)
-        t.daemon = True  # Allow the thread to exit when the main program exits
-        t.start()
+        send_thread = threading.Thread(target=self.send_video)
+        receive_thread = threading.Thread(target=self.receive_video)
+
+        send_thread.daemon = True
+        receive_thread.daemon = True
+
+        send_thread.start()
+        receive_thread.start()
+
+        send_thread.join()
+        receive_thread.join()
+
+        self.sock.close()
 
