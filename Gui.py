@@ -39,17 +39,21 @@ class HostWindow:
 
     def broadcast_password(self):
         while self.running:
+            print(f"Broadcasting password: {self.PASSWORD}")  # Debug log
             PasswordBrdcst.send_password(self.PASSWORD)
             time.sleep(10)  # Broadcast every 10 seconds
 
     def wait_for_confirmation_and_start(self):
+        print("Waiting for confirmation...")  # Debug log
         if self.wait_for_confirmation():
+            print("Confirmation received!")  # Debug log
             self.running = False  # Stop broadcasting
             self.root.destroy()
             # Start the Peer instance for hosting
             peer = Peer(remote_ip="127.0.0.1", camera_index=0)  # Use localhost for hosting
             peer.start()
         else:
+            print("Connection confirmation failed!")  # Debug log
             self.show_error("Connection confirmation failed!")
 
     def wait_for_confirmation(self, port=12346):
@@ -60,8 +64,10 @@ class HostWindow:
             s.settimeout(30)  # Wait for 30 seconds for confirmation
             try:
                 data, addr = s.recvfrom(1024)
+                print(f"Received confirmation from {addr}: {data.decode('utf-8')}")  # Debug log
                 return data.decode('utf-8') == "CONFIRMED"
             except socket.timeout:
+                print("Timeout while waiting for confirmation.")  # Debug log
                 return False
 
     def show_error(self, message):
@@ -113,18 +119,22 @@ class JoinWindow:
 
     def validate_and_start(self, password, ip):
         realPass = PasswordBrdcst.recv_password()
+        print(f"Received password: {realPass}")  # Debug log
         
         if password == realPass:  
+            print("Password is correct. Sending confirmation...")  # Debug log
             self.send_confirmation(ip)
             self.root.destroy()
             # Start the Peer instance for joining
             peer = Peer(remote_ip=ip, camera_index=0)  # Use the entered IP
             peer.start()
         else:
+            print("Password is incorrect!")  # Debug log
             self.show_error("Password is incorrect!")
 
     def send_confirmation(self, ip, port=12346):
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            print(f"Sending confirmation to {ip}:{port}")  # Debug log
             s.sendto(b"CONFIRMED", (ip, port))
 
     def show_error(self, message):
