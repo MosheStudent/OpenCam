@@ -87,22 +87,9 @@ class SenderWindow:
 
 class ReceiverWindow:
     def __init__(self):
-        self.root = tk.Tk()
-        self.root.geometry("300x200+100+100")
-        self.root.title("Receive Video")
-
-        self.displayWin()
-
-    def displayWin(self):
-        label = tk.Label(self.root, text="Waiting to receive video...")
-        label.pack()
-
-        startButton = tk.Button(self.root, text="Start Receiving", command=self.start_receiving)
-        startButton.pack()
-
-        self.root.mainloop()
+        # Automatically start receiving video
+        self.start_receiving()
 
     def start_receiving(self):
-        self.root.destroy()
         receiver = Receiver()
         receiver.start()
